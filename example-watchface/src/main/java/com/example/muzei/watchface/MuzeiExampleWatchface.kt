@@ -20,6 +20,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import android.support.wearable.watchface.WatchFaceStyle
 import android.util.Size
 import android.view.Gravity
@@ -35,6 +36,7 @@ import androidx.wear.watchface.WatchFace
 import androidx.wear.watchface.WatchFaceService
 import androidx.wear.watchface.WatchFaceType
 import androidx.wear.watchface.WatchState
+import androidx.wear.watchface.complications.ComplicationSlotBounds
 import androidx.wear.watchface.complications.DefaultComplicationDataSourcePolicy
 import androidx.wear.watchface.complications.SystemDataSources
 import androidx.wear.watchface.complications.data.ComplicationType
@@ -60,24 +62,42 @@ class MuzeiExampleWatchface : WatchFaceService() {
     ): ComplicationSlotsManager {
         // This example uses a single, fixed complication to show the time and date
         // rather than manually drawing the time
-        val canvasComplicationFactory = CanvasComplicationFactory { watchState, invalidateCallback ->
-            CanvasComplicationDrawable(ComplicationDrawable(this).apply {
-                activeStyle.run {
-                    titleSize = resources.getDimensionPixelSize(R.dimen.title_size)
-                    textSize = resources.getDimensionPixelSize(R.dimen.text_size)
-                }
-                ambientStyle.run {
-                    titleSize = resources.getDimensionPixelSize(R.dimen.title_size)
-                    textSize = resources.getDimensionPixelSize(R.dimen.text_size)
-                }
-            }, watchState, invalidateCallback)
+        val complicationDrawable: ComplicationDrawable = ComplicationDrawable(this).apply {
+            activeStyle.run {
+                titleSize = resources.getDimensionPixelSize(R.dimen.title_size)
+                textSize = resources.getDimensionPixelSize(R.dimen.text_size)
+            }
+            ambientStyle.run {
+                titleSize = resources.getDimensionPixelSize(R.dimen.title_size)
+                textSize = resources.getDimensionPixelSize(R.dimen.text_size)
+            }
         }
-        val timeComplication = ComplicationSlot.createBackgroundComplicationSlotBuilder(
-            0,
-            canvasComplicationFactory,
-            listOf(ComplicationType.SHORT_TEXT),
-            DefaultComplicationDataSourcePolicy(SystemDataSources.DATA_SOURCE_TIME_AND_DATE)
-        ).setFixedComplicationDataSource(true).build()
+
+        val canvasComplicationFactory =
+            CanvasComplicationFactory { watchState, invalidateCallback ->
+                CanvasComplicationDrawable(
+                    complicationDrawable,
+                    watchState,
+                    invalidateCallback
+                )
+            }
+
+        val timeComplication: ComplicationSlot = ComplicationSlot.createRoundRectComplicationSlotBuilder(
+            id = 0,
+            canvasComplicationFactory = canvasComplicationFactory,
+            supportedTypes = listOf(ComplicationType.SHORT_TEXT),
+            defaultDataSourcePolicy = DefaultComplicationDataSourcePolicy(
+                SystemDataSources.DATA_SOURCE_TIME_AND_DATE
+            ),
+            bounds = ComplicationSlotBounds(
+                RectF(
+                    0.0f,
+                    0.0f,
+                    1.0f,
+                    1.0f
+                )
+            )
+        ).setDefaultDataSourceType(ComplicationType.SHORT_TEXT).build()
 
         return ComplicationSlotsManager(
             listOf(timeComplication),
